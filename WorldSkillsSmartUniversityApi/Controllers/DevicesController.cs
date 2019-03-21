@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using WorldSkillsSmartUniversityApi.Models;
 using WorldSkillsSmartUniversityApi.Models.Domain;
+using WorldSkillsSmartUniversityApi.Validators;
 
 namespace WorldSkillsSmartUniversityApi.Controllers
 {
@@ -22,32 +22,24 @@ namespace WorldSkillsSmartUniversityApi.Controllers
 
         [Route("api/rooms/{roomId}/[controller]")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Device>>> GetDevicesAsync([FromRoute] int roomId) =>
-            await _dbContext.Devices
-                .Where(d => d.RoomId == roomId)
-                .Include(d => d.Type)
-                .AsNoTracking()
-                .ToListAsync();
-        
+        public async Task<ActionResult<IEnumerable<Device>>> GetDevicesAsync(
+            [FromRoute] [EntityIdValidation(typeof(Room))]
+            int roomId) =>
+            await _dbContext.GetDevicesInRoomAsync(roomId);
+
         [Route("api/[controller]/{id}")]
         [HttpGet]
-        public async Task<ActionResult<Device>> GetDeviceAsync([FromRoute] int id) =>
-            await _dbContext.Devices.FindAsync(id);
-        
-        [Route("api/[controller]/{id}")]
+        public async Task<ActionResult<Device>> GetDeviceAsync([FromRoute] [EntityIdValidation(typeof(Device))]
+            int id) =>
+            await _dbContext.GetDeviceAsync(id);
+
+        [Route("api/[controller]")]
         [HttpPatch]
-        public async Task<ActionResult> SetDeviceAsync([FromRoute] int id, [Required]string value)
+        public async Task<ActionResult> SetDeviceAsync([FromBody] DeviceValue setDevice)
         {
-            var device = await _dbContext.Devices.FindAsync(id);
+            var device = await _dbContext.Devices.FindAsync(setDevice.Id);
 
-            if (device == null)
-            {
-                return NotFound();
-            }
-            
-            //TODO add validation for value
-
-            device.Value = value;
+            device.Value = setDevice.Value;
 
             await _dbContext.SaveChangesAsync();
 

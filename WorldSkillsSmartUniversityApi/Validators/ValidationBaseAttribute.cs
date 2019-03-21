@@ -6,7 +6,7 @@ using WorldSkillsSmartUniversityApi.Models.Domain;
 namespace WorldSkillsSmartUniversityApi.Validators
 {
     [AttributeUsage(AttributeTargets.Property)]
-    public class ValidationBaseAttribute : ValidationAttribute
+    public abstract class ValidationBaseAttribute : ValidationAttribute
     {
         protected SmartUniversityDbContext DbContext;
 

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WorldSkillsSmartUniversityApi.Models;
 using WorldSkillsSmartUniversityApi.Models.Domain;
+using WorldSkillsSmartUniversityApi.Validators;
 
 namespace WorldSkillsSmartUniversityApi.Controllers
 {
@@ -23,28 +24,48 @@ namespace WorldSkillsSmartUniversityApi.Controllers
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Macro>>> GetAsync() =>
-            await _dbContext.Macros.ToListAsync();
+            await _dbContext.Macros
+                .Include(macro => macro.Devices)
+                .ThenInclude(device => device.Device)
+                .ToListAsync();
 
-        [HttpDelete]
+
+        [HttpPatch]
         [Route("{id}")]
-        public async Task<ActionResult> Delete(int id)
+        public async Task<ActionResult> ActivateAsync(int id)
         {
-            var macro = await _dbContext.Macros.FindAsync(id);
+            var macro = await _dbContext.GetMacroAsync(id);
 
             if (macro == null)
             {
-                return NotFound(nameof(macro));
+                return NotFound(new {Success = false});
             }
+
+            foreach (var macroDevice in macro.Devices)
+            {
+                macroDevice.Device.Value = macroDevice.Value;
+
+                await _dbContext.SaveChangesAsync();
+            }
+            
+            return Ok(new {Success = true});
+        }
+
+        [HttpDelete]
+        [Route("{id}")]
+        public async Task<ActionResult> Delete([EntityIdValidation(typeof(Macro))]int id)
+        {
+            var macro = _dbContext.Macros.Find(id);
 
             _dbContext.Remove(macro);
 
             await _dbContext.SaveChangesAsync();
 
-            return Ok();
+            return Ok(new {Success = true});
         }
 
         [HttpPost]
-        public async Task<ActionResult> PostAsync(AddMacro macro)
+        public async Task<ActionResult<Macro>> PostAsync(AddMacro macro)
         {
             var newMacro = new Macro
             {
@@ -52,7 +73,7 @@ namespace WorldSkillsSmartUniversityApi.Controllers
                 Devices = macro.Devices
                     .Select(device => new MacroDevice
                     {
-                        DeviceId = device.Id,
+                        DeviceId = device.Id.Value,
                         Value = device.Value
                     })
                     .ToList()
@@ -61,7 +82,7 @@ namespace WorldSkillsSmartUniversityApi.Controllers
 
             await _dbContext.SaveChangesAsync();
 
-            return Ok(newMacro.Id);
+            return Ok(newMacro);
         }
     }
 }

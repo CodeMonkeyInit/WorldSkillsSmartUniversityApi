@@ -38,10 +38,10 @@ namespace WorldSkillsSmartUniversityApi.Controllers
                 return Unauthorized();
             }
 
-            return GenerateJSONWebToken(user);
+            return GenerateJsonWebToken(user);
         }
 
-        private AccessToken GenerateJSONWebToken(User userInfo)
+        private AccessToken GenerateJsonWebToken(User userInfo)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -59,9 +59,8 @@ namespace WorldSkillsSmartUniversityApi.Controllers
         private Task<User> AuthenticateUserAsync(LoginData login)
         {
             return _dbContext.Users
-                .FirstOrDefaultAsync(user => user.Username == login.Login 
-                                                                           && user.Password == login.Password);
-
+                .FirstOrDefaultAsync(user => 
+                    user.Username == login.Login && user.Password == login.Password);
         }
     }
 }

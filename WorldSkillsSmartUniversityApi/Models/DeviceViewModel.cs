@@ -1,12 +1,13 @@
 using System.ComponentModel.DataAnnotations;
+using WorldSkillsSmartUniversityApi.Models.Domain;
 using WorldSkillsSmartUniversityApi.Validators;
 
 namespace WorldSkillsSmartUniversityApi.Models
 {
-    public class DeviceValue : DeviceViewModel
+    public class DeviceViewModel
     {
         [Required]
-        [DeviceValueValidation]
-        public string Value { get; set; }
+        [EntityIdValidation(typeof(Device))]
+        public int? Id { get; set; }
     }
 }

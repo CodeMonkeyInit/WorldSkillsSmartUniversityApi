@@ -1,8 +1,12 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace WorldSkillsSmartUniversityApi.Models.Domain
 {
-    public class SmartUniversityDbContext: DbContext
+    public class SmartUniversityDbContext : DbContext
     {
         public DbSet<User> Users { get; set; }
 
@@ -11,6 +15,25 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
         public DbSet<Device> Devices { get; set; }
 
         public DbSet<Macro> Macros { get; set; }
+
+        public async Task<Macro> GetMacroAsync(int id) =>
+            await Macros
+                .Include(macro => macro.Devices)
+                    .ThenInclude(device => device.Device)
+                .FirstOrDefaultAsync(macro => macro.Id == id);
+
+
+        public Task<List<Device>> GetDevicesInRoomAsync(int roomId) =>
+            GetDevices()
+                .Where(d => d.RoomId == roomId)
+                .AsNoTracking()
+                .ToListAsync();
+
+        public Task<Device> GetDeviceAsync(int deviceId) =>
+            GetDevices().FirstOrDefaultAsync(device => device.Id == deviceId);
+
+        private IIncludableQueryable<Device, Room> GetDevices() =>
+            Devices.Include(d => d.Room);
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -22,22 +45,6 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
                 Name = "A914", Photo = "sharaga.png"
             });
 
-
-            modelBuilder.Entity<DeviceType>().HasData(new DeviceType
-                {
-                    Id = -1,
-                    Name = "Переключатели"
-                }, new DeviceType
-                {
-                    Id = -2,
-                    Name = "Окна"
-                },
-                new DeviceType
-                {
-                    Id = -3,
-                    Name = "Температурные"
-                });
-
             modelBuilder.Entity<Device>().HasData(new[]
             {
                 new Device
@@ -46,7 +53,7 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
                     Name = "Люстра",
                     Value = "off",
                     RoomId = roomId,
-                    TypeId = -1
+                    Type = DeviceType.LightBulb
                 },
                 new Device
                 {
@@ -54,7 +61,7 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
                     Name = "Окно",
                     Value = "closed",
                     RoomId = roomId,
-                    TypeId = -2
+                    Type = DeviceType.Window
                 },
                 new Device
                 {
@@ -62,7 +69,15 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
                     Name = "Кондиционер",
                     Value = "+20",
                     RoomId = roomId,
-                    TypeId = -3
+                    Type = DeviceType.AirConditioner
+                },
+                new Device
+                {
+                    Id = -4,
+                    Name = "Датчик температуры",
+                    Value = "+20",
+                    RoomId = roomId,
+                    Type = DeviceType.TemperatureSensor
                 }
             });
 
@@ -72,7 +87,7 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
                 Username = "Vitya",
                 Password = "pitux"
             });
-            
+
             modelBuilder.Entity<MacroDevice>()
                 .HasKey(macroDevice => new {macroDevice.MacroId, macroDevice.DeviceId});
 
@@ -85,7 +100,7 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
                 .HasOne(macroDevice => macroDevice.Device)
                 .WithMany(device => device.Macros)
                 .HasForeignKey(macroDevice => macroDevice.DeviceId);
-            
+
             base.OnModelCreating(modelBuilder);
         }
 
