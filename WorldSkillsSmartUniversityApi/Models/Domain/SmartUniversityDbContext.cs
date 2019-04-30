@@ -42,7 +42,7 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
             modelBuilder.Entity<Room>().HasData(new Room
             {
                 Id = roomId,
-                Name = "A914", Photo = "sharaga.png"
+                Name = "Г-511", Photo = "image.png"
             });
 
             modelBuilder.Entity<Device>().HasData(new[]
@@ -84,8 +84,8 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
             modelBuilder.Entity<User>().HasData(new User
             {
                 Id = -1,
-                Username = "Vitya",
-                Password = "pitux"
+                Username = "WorldSkills",
+                Password = "WordSkills1337"
             });
 
             modelBuilder.Entity<MacroDevice>()
