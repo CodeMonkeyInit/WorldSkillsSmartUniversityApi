@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,76 +17,53 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
 
         public DbSet<Macro> Macros { get; set; }
 
-        public async Task<Macro> GetMacroAsync(int id) =>
-            await Macros
+        public IQueryable<Room> GetOwnedRooms(string userName) => 
+            Rooms.Where(room => room.User.Username == userName);
+
+
+        public async Task<Macro> GetMacroAsync(int id, string ownerName) =>
+            await GetMacros(ownerName)
                 .Include(macro => macro.Devices)
-                    .ThenInclude(device => device.Device)
+                .ThenInclude(device => device.Device)
                 .FirstOrDefaultAsync(macro => macro.Id == id);
 
+        public IQueryable<Macro> GetMacros(string ownerName) =>
+            Macros.Where(macro => macro.UserId == ownerName);
 
-        public Task<List<Device>> GetDevicesInRoomAsync(int roomId) =>
-            GetDevices()
+
+        public Task<List<Device>> GetDevicesInRoomAsync(int roomId, string ownerName) =>
+            GetDevices(ownerName)
                 .Where(d => d.RoomId == roomId)
                 .AsNoTracking()
                 .ToListAsync();
 
-        public Task<Device> GetDeviceAsync(int deviceId) =>
-            GetDevices().FirstOrDefaultAsync(device => device.Id == deviceId);
+        public Task<Device> GetDeviceAsync(int deviceId, string ownerName) =>
+            GetDevices(ownerName).FirstOrDefaultAsync(device => device.Id == deviceId);
 
-        private IIncludableQueryable<Device, Room> GetDevices() =>
-            Devices.Include(d => d.Room);
+        public IIncludableQueryable<Device, Room> GetDevices(string ownerName) =>
+            Devices
+                .Where(device => device.UserId == ownerName)
+                .Include(d => d.Room);
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            const int roomId = -1;
-            modelBuilder.Entity<Room>().HasData(new Room
-            {
-                Id = roomId,
-                Name = "Г-511", Photo = "image.png"
-            });
+            var users = Enumerable.Range(1, 20)
+                .Select(i => CreateUser("ws", i)).Union(
+                    Enumerable.Range(1, 20)
+                        .Select(i => CreateUser("demo", i + 20)))
+                .ToList();
 
-            modelBuilder.Entity<Device>().HasData(new[]
-            {
-                new Device
-                {
-                    Id = -1,
-                    Name = "Люстра",
-                    Value = "off",
-                    RoomId = roomId,
-                    Type = DeviceType.LightBulb
-                },
-                new Device
-                {
-                    Id = -2,
-                    Name = "Окно",
-                    Value = "closed",
-                    RoomId = roomId,
-                    Type = DeviceType.Window
-                },
-                new Device
-                {
-                    Id = -3,
-                    Name = "Кондиционер",
-                    Value = "+20",
-                    RoomId = roomId,
-                    Type = DeviceType.AirConditioner
-                },
-                new Device
-                {
-                    Id = -4,
-                    Name = "Датчик температуры",
-                    Value = "+20",
-                    RoomId = roomId,
-                    Type = DeviceType.TemperatureSensor
-                }
-            });
 
-            modelBuilder.Entity<User>().HasData(new User
+            modelBuilder.Entity<User>().HasData(users);
+
+            modelBuilder.Entity<Room>().HasData(users.SelectMany(user => user.Rooms));
+            modelBuilder.Entity<Device>().HasData(users.SelectMany(user => user.Devices));
+
+            users.ForEach(user =>
             {
-                Id = -1,
-                Username = "WorldSkills",
-                Password = "WordSkills1337"
+                user.Rooms.Clear();
+                user.Devices.Clear();
             });
 
             modelBuilder.Entity<MacroDevice>()
@@ -102,6 +80,70 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
                 .HasForeignKey(macroDevice => macroDevice.DeviceId);
 
             base.OnModelCreating(modelBuilder);
+        }
+
+        private static User CreateUser(string ws, int i)
+        {
+            string userId = ws + i;
+            int roomId = -i;
+            int deviceIdBase = i * 5;
+
+            return new User
+            {
+                Username = userId,
+                Password = string.Join(string.Empty, Guid.NewGuid()
+                    .ToString()
+                    .Take(6)),
+                Rooms = new List<Room>
+                {
+                    new Room
+                    {
+                        Id = roomId,
+                        Name = "Г-511",
+                        Photo = "image.png",
+                        UserId = userId
+                    }
+                },
+                Devices = new List<Device>
+                {
+                    new Device
+                    {
+                        Id = -(deviceIdBase - 1),
+                        Name = "Люстра",
+                        Value = "off",
+                        RoomId = roomId,
+                        Type = DeviceType.LightBulb,
+                        UserId = userId
+                    },
+                    new Device
+                    {
+                        Id = -(deviceIdBase - 2),
+                        Name = "Окно",
+                        Value = "closed",
+                        RoomId = roomId,
+                        Type = DeviceType.Window,
+                        UserId = userId
+                    },
+                    new Device
+                    {
+                        Id = -(deviceIdBase - 3),
+                        Name = "Кондиционер",
+                        Value = "+20",
+                        RoomId = roomId,
+                        Type = DeviceType.AirConditioner,
+                        UserId = userId
+                    },
+                    new Device
+                    {
+                        Id = -(deviceIdBase - 4),
+                        Name = "Датчик температуры",
+                        Value = "+20",
+                        RoomId = roomId,
+                        Type = DeviceType.TemperatureSensor,
+                        UserId = userId
+                    }
+                }
+            };
         }
 
         public SmartUniversityDbContext(DbContextOptions options) : base(options)

@@ -1,5 +1,6 @@
 using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.Twitter;
@@ -48,13 +49,12 @@ namespace WorldSkillsSmartUniversityApi.Controllers
 
             var token = new JwtSecurityToken(_configuration["Jwt:Issuer"],
                 _configuration["Jwt:Issuer"],
-                null,
+                new []{new Claim(ClaimTypes.Name, userInfo.Username), },
                 expires: DateTime.Now.AddHours(24),
                 signingCredentials: credentials);
 
             return new AccessToken {Token = new JwtSecurityTokenHandler().WriteToken(token)};
         }
-
 
         private Task<User> AuthenticateUserAsync(LoginData login)
         {

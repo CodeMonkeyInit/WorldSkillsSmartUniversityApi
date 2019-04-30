@@ -49,6 +49,8 @@ namespace WorldSkillsSmartUniversityApi
             
             services.AddDbContext<SmartUniversityDbContext>(config =>
                 config.UseSqlite(Configuration.GetConnectionString("Default")));
+
+            services.AddHttpContextAccessor();
             
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }

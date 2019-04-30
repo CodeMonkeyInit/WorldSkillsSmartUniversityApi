@@ -24,12 +24,15 @@ namespace WorldSkillsSmartUniversityApi.Controllers
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Room>>> GetRoomsAsync() =>
-            await _dbContext.Rooms
+            await _dbContext
+                .GetOwnedRooms(User.Identity.Name)
                 .AsNoTracking()
                 .ToListAsync();
 
         [HttpGet("{id}")]
         public async Task<ActionResult<Room>> GetRoomAsync([EntityIdValidation(typeof(Room))] int id) =>
-            await _dbContext.Rooms.FindAsync(id);
+            await _dbContext
+                .GetOwnedRooms(User.Identity.Name)
+                .FirstOrDefaultAsync(room => room.Id == id);
     }
 }
