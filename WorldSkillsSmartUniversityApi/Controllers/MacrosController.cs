@@ -24,7 +24,7 @@ namespace WorldSkillsSmartUniversityApi.Controllers
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Macro>>> GetAsync() =>
-            await _dbContext.GetMacros(User.Identity.Name)
+            await _dbContext.GetMacrosAsync(User.Identity.Name)
                 .Include(macro => macro.Devices)
                 .ThenInclude(device => device.Device)
                 .ToListAsync();
@@ -55,7 +55,7 @@ namespace WorldSkillsSmartUniversityApi.Controllers
         [Route("{id}")]
         public async Task<ActionResult> Delete([EntityIdValidation(typeof(Macro))]int id)
         {
-            var removingMacro = _dbContext.GetMacros(User.Identity.Name)
+            Macro removingMacro = await _dbContext.GetMacrosAsync(User.Identity.Name)
                 .FirstOrDefaultAsync(macro => macro.Id == id);
 
             _dbContext.Remove(removingMacro);

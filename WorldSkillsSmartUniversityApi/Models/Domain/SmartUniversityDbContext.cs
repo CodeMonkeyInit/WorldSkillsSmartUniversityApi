@@ -22,12 +22,12 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
 
 
         public async Task<Macro> GetMacroAsync(int id, string ownerName) =>
-            await GetMacros(ownerName)
+            await GetMacrosAsync(ownerName)
                 .Include(macro => macro.Devices)
                 .ThenInclude(device => device.Device)
                 .FirstOrDefaultAsync(macro => macro.Id == id);
 
-        public IQueryable<Macro> GetMacros(string ownerName) =>
+        public IQueryable<Macro> GetMacrosAsync(string ownerName) =>
             Macros.Where(macro => macro.UserId == ownerName);
 
 
