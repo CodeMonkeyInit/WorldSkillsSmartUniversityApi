@@ -43,7 +43,7 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
             {
                 case DeviceType.LightBulb:
                 case DeviceType.Switch:
-                    return new[] {"on", "of"};
+                    return new[] {"on", "off"};
                 case DeviceType.Humidifier:
                     return GetRange(0, 100);
                 case DeviceType.Door:
