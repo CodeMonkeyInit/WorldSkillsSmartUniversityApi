@@ -20,4 +20,10 @@
 
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="worldskills.db">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 </Project>

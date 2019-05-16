@@ -72,7 +72,6 @@ namespace WorldSkillsSmartUniversityApi
 
             app.UseDefaultFiles();
             app.UseStaticFiles();
-            app.UseHttpsRedirection();
 
             app.UseCors("AllowOrigin");
 
