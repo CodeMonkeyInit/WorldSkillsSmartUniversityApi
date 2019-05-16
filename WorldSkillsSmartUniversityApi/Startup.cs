@@ -46,12 +46,14 @@ namespace WorldSkillsSmartUniversityApi
 
             services.Configure<ForwardedHeadersOptions>(options =>
                 options.KnownProxies.Add(IPAddress.Parse(Configuration["ProxyIp"])));
-            
+
             services.AddDbContext<SmartUniversityDbContext>(config =>
                 config.UseSqlite(Configuration.GetConnectionString("Default")));
 
             services.AddHttpContextAccessor();
-            
+            services.AddCors(options => options.AddPolicy("AllowOrigin",
+                configuration => configuration.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
+
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }
 
@@ -71,6 +73,8 @@ namespace WorldSkillsSmartUniversityApi
             app.UseDefaultFiles();
             app.UseStaticFiles();
             app.UseHttpsRedirection();
+
+            app.UseCors("AllowOrigin");
 
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {

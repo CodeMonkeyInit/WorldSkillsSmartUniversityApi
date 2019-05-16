@@ -17,7 +17,7 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
 
         public DbSet<Macro> Macros { get; set; }
 
-        public IQueryable<Room> GetOwnedRooms(string userName) => 
+        public IQueryable<Room> GetOwnedRooms(string userName) =>
             Rooms.Where(room => room.User.Username == userName);
 
 
@@ -58,12 +58,13 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
             modelBuilder.Entity<User>().HasData(users);
 
             modelBuilder.Entity<Room>().HasData(users.SelectMany(user => user.Rooms));
-            modelBuilder.Entity<Device>().HasData(users.SelectMany(user => user.Devices));
+            modelBuilder.Entity<Device>()
+                .HasData(users.SelectMany(user => user.Rooms).SelectMany(rooms => rooms.Devices));
 
             users.ForEach(user =>
             {
+                user.Rooms.ForEach(room => room.Devices.Clear());
                 user.Rooms.Clear();
-                user.Devices.Clear();
             });
 
             modelBuilder.Entity<MacroDevice>()
@@ -85,8 +86,8 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
         private static User CreateUser(string ws, int i)
         {
             string userId = ws + i;
-            int roomId = -i;
-            int deviceIdBase = i * 5;
+            int roomIdBase = -(i * 10);
+            int deviceIdBase = -(i * 10);
 
             return new User
             {
@@ -94,57 +95,93 @@ namespace WorldSkillsSmartUniversityApi.Models.Domain
                 Password = string.Join(string.Empty, Guid.NewGuid()
                     .ToString()
                     .Take(6)),
-                Rooms = new List<Room>
-                {
-                    new Room
-                    {
-                        Id = roomId,
-                        Name = "Г-511",
-                        Photo = "image.png",
-                        UserId = userId
-                    }
-                },
-                Devices = new List<Device>
-                {
-                    new Device
-                    {
-                        Id = -(deviceIdBase - 1),
-                        Name = "Люстра",
-                        Value = "off",
-                        RoomId = roomId,
-                        Type = DeviceType.LightBulb,
-                        UserId = userId
-                    },
-                    new Device
-                    {
-                        Id = -(deviceIdBase - 2),
-                        Name = "Окно",
-                        Value = "closed",
-                        RoomId = roomId,
-                        Type = DeviceType.Window,
-                        UserId = userId
-                    },
-                    new Device
-                    {
-                        Id = -(deviceIdBase - 3),
-                        Name = "Кондиционер",
-                        Value = "+20",
-                        RoomId = roomId,
-                        Type = DeviceType.AirConditioner,
-                        UserId = userId
-                    },
-                    new Device
-                    {
-                        Id = -(deviceIdBase - 4),
-                        Name = "Датчик температуры",
-                        Value = "+20",
-                        RoomId = roomId,
-                        Type = DeviceType.TemperatureSensor,
-                        UserId = userId
-                    }
-                }
+                Rooms = Enumerable
+                    .Range(roomIdBase, 6)
+                    .Select((roomId, index) => GetRoom(roomId, deviceIdBase * roomId, userId, index))
+                    .ToList()
             };
         }
+
+        public static Room GetRoom(int roomId, int deviceIdBase, string userId, int index)
+        {
+            bool DividesBy(int value, int by) => value % by == 0;
+            bool IsEven(int value) => DividesBy(value, 2);
+            bool IsOdd(int value) => !IsEven(value);
+
+            bool DeviceIncluded(Device device) =>
+                (IsEven(roomId) && IsEven((int) device.Type))
+                || (IsOdd(roomId) && IsOdd((int) device.Type));
+
+            var devices = new List<Device>
+            {
+                new Device
+                {
+                    Id = deviceIdBase++,
+                    Name = "Люстра",
+                    Value = "off",
+                    RoomId = roomId,
+                    Type = DeviceType.LightBulb,
+                    UserId = userId
+                },
+                new Device
+                {
+                    Id = deviceIdBase++,
+                    Name = "Окно",
+                    Value = "closed",
+                    RoomId = roomId,
+                    Type = DeviceType.Window,
+                    UserId = userId
+                },
+                new Device
+                {
+                    Id = deviceIdBase++,
+                    Name = "Кондиционер",
+                    Value = "+20",
+                    RoomId = roomId,
+                    Type = DeviceType.AirConditioner,
+                    UserId = userId
+                },
+                new Device
+                {
+                    Id = deviceIdBase++,
+                    Name = "Датчик температуры",
+                    Value = "+20",
+                    RoomId = roomId,
+                    Type = DeviceType.TemperatureSensor,
+                    UserId = userId
+                },
+                new Device
+                {
+                    Id = deviceIdBase++,
+                    Name = "Увлажнитель",
+                    Value = "4",
+                    RoomId = roomId,
+                    Type = DeviceType.Humidifier,
+                    UserId = userId
+                },
+                new Device
+                {
+                    Id = deviceIdBase++,
+                    Name = "Дверь",
+                    Value = "closed",
+                    RoomId = roomId,
+                    Type = DeviceType.Door,
+                    UserId = userId
+                },
+            };
+            return new Room
+            {
+                Id = roomId,
+                Name = "Г" + roomId,
+                Photo = $"images/room{index}.png",
+                UserId = userId,
+                Devices = devices
+                    .Where(DeviceIncluded)
+                    .OrderBy(key => Guid.NewGuid())
+                    .ToList()
+            };
+        }
+
 
         public SmartUniversityDbContext(DbContextOptions options) : base(options)
         {
